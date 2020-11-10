@@ -1,0 +1,14 @@
+{
+  "python.linting.pylintEnabled": false,
+  "python.linting.flake8Enabled": true,
+  "python.linting.enabled": true,
+  "python.linting.flake8Args": ["--max-line-length=248"],
+  "[python]": {
+    "editor.formatOnSave": true
+  },
+  "python.formatting.provider": "black",
+  "python.formatting.blackPath": "./venv/bin/black",
+  "python.formatting.blackArgs": ["--line-length", "100"],
+  "prettier.embeddedLanguageFormatting": "off",
+  "python.pythonPath": "venv/bin/python"
+}
