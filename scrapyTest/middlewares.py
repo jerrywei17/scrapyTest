@@ -3,10 +3,11 @@
 # See documentation in:
 # https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
-from scrapy import signals
-
-# useful for handling different item types with a single interface
-from itemadapter import is_item, ItemAdapter
+from scrapy import signals, exceptions
+from scrapy.downloadermiddlewares.httpproxy import HttpProxyMiddleware
+from collections import defaultdict
+import json
+import random
 
 
 class ScrapytestSpiderMiddleware:
@@ -101,3 +102,30 @@ class ScrapytestDownloaderMiddleware:
 
     def spider_opened(self, spider):
         spider.logger.info('Spider opened: %s' % spider.name)
+
+
+class RandomProxyMiddleware(HttpProxyMiddleware):
+    def __init__(self, auth_encoding='latin-1', proxy_list_file=None):
+        if not proxy_list_file:
+            raise exceptions.NotConfigured
+        self.auth_encoding = auth_encoding
+        self.proxies = defaultdict(list)
+
+        with open(proxy_list_file) as f:
+            proxy_list = json.load(f)
+            for proxy in proxy_list:
+                scheme = proxy['scheme']
+                url = proxy['proxy']
+                self.proxies[scheme].append(self._get_proxy(url, scheme))
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        auth_encoding = crawler.settings.get('HTTPPROXY_AUTH_ENCODING', 'latin-1')
+        proxy_list_file = crawler.settings.get('PROXY_LIST_FILE', '/proxy.json')
+        return cls(auth_encoding, proxy_list_file)
+
+    def _set_proxy(self, request, scheme):
+        creds, proxy = random.choice(self.proxies[scheme])
+        request.meta['proxy'] = proxy
+        if creds:
+            request.headers['Proxy-Authorization'] = b"Basic" + creds
